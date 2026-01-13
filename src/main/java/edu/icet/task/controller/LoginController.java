@@ -1,20 +1,33 @@
 package edu.icet.task.controller;
 
+import edu.icet.task.config.CloudinaryUtil;
+import edu.icet.task.config.PasswordValidateUtil;
+import edu.icet.task.model.dto.UserDTO;
+import edu.icet.task.service.UserService;
+import edu.icet.task.service.impl.UserServiceImpl;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Hyperlink;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
+import javafx.stage.FileChooser;
 
-public class LoginController {
+import java.io.File;
+import java.net.URL;
+import java.util.ResourceBundle;
 
+public class LoginController implements Initializable {
+    UserService userService = new UserServiceImpl();
     private boolean isLoginView = true;
+    private File selectedImageFile;
+    private String strongStyle = "-fx-border-color: #22c55e; -fx-border-width: 2; -fx-border-radius: 8;";
+    private String weekStyle = "-fx-border-color: #ef4444; -fx-border-width: 2; -fx-border-radius: 8;";
+    private String imgUrl;
+    private String email;
 
     @FXML
     private Button btnLogin;
@@ -24,6 +37,9 @@ public class LoginController {
 
     @FXML
     private Circle imgSignupPreview;
+
+    @FXML
+    private Label lblPasswordStatus;
 
     @FXML
     private Label lblFooterText;
@@ -82,7 +98,14 @@ public class LoginController {
 
     @FXML
     void btnSelectImageOnAction(ActionEvent event) {
-        //image select
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        selectedImageFile = fileChooser.showOpenDialog(mainContent.getScene().getWindow());
+
+        if (selectedImageFile != null) {
+            Image image = new Image(selectedImageFile.toURI().toString());
+            imgSignupPreview.setFill(new ImagePattern(image));
+        }
     }
 
     @FXML
@@ -92,7 +115,36 @@ public class LoginController {
 
     @FXML
     void btnSignupOnAction(ActionEvent event) {
-        //sign up button
+        String password = txtSignupPassword.getText();
+
+        if(!PasswordValidateUtil.isValid(password)) {
+            new Alert(Alert.AlertType.ERROR, PasswordValidateUtil.getRequirements()).show();
+        }
+        if (null!=selectedImageFile){
+            imgUrl = CloudinaryUtil.uploadImage(selectedImageFile);
+        }
+        if (userService.checkEmail(txtSignupEmail.getText())){
+            email = txtSignupEmail.getText();
+        }
+        UserDTO userDTO = new UserDTO(txtSignupFirstName.getText(),txtSignupLastName.getText(),email,password,imgUrl);
+        if (userService.createNewAccount(userDTO)){
+            new Alert(Alert.AlertType.INFORMATION, "Registration Successful!").show();
+            clearSignUpPage();
+            lnkToggleOnAction(null);
+        }
+
+    }
+
+    private void clearSignUpPage() {
+        txtSignupEmail.setText("");
+        txtSignupFirstName.setText("");
+        txtSignupLastName.setText("");
+        txtSignupPassword.setText("");
+        txtSignupConfirmPassword.setText("");
+        txtSignupEmail.setStyle("");
+        txtSignupPassword.setStyle("");
+        txtSignupConfirmPassword.setStyle("");
+
     }
 
     @FXML
@@ -122,4 +174,50 @@ public class LoginController {
         isLoginView = !isLoginView;
     }
 
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        checkEmailAndPasswordComplexity();
+    }
+
+    private void checkEmailAndPasswordComplexity() {
+        txtSignupEmail.textProperty().addListener((observable ,oldValue,newVale)->{
+            validateEmail();
+        });
+        txtSignupPassword.textProperty().addListener((observable, oldValue, newValue) -> {
+            validateRealTime();
+        });
+        txtSignupConfirmPassword.textProperty().addListener((observable, oldValue, newValue) -> {
+            validateRealTime();
+        });
+    }
+
+    private void validateEmail() {
+        email = txtSignupEmail.getText();
+        if (userService.checkEmail(email)){
+            txtSignupEmail.setStyle(strongStyle);
+        }else{
+            txtSignupEmail.setStyle(weekStyle);
+        }
+    }
+
+    private void validateRealTime() {
+        String password = txtSignupPassword.getText();
+        String confirmPassword = txtSignupConfirmPassword.getText();
+
+        if (PasswordValidateUtil.isValid(password)) {
+            txtSignupPassword.setStyle(strongStyle);
+            lblPasswordStatus.setText("Strong Password");
+            lblPasswordStatus.setStyle("-fx-text-fill: #22c55e;");
+        } else {
+            txtSignupPassword.setStyle(weekStyle);
+            lblPasswordStatus.setText("Weak Password");
+            lblPasswordStatus.setStyle("-fx-text-fill: #ef4444;");
+        }
+
+        if (userService.checkPassword(password, confirmPassword)) {
+            txtSignupConfirmPassword.setStyle(strongStyle);
+        } else {
+            txtSignupConfirmPassword.setStyle(weekStyle);
+        }
+    }
 }
