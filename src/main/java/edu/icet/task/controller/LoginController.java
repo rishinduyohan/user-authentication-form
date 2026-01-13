@@ -157,16 +157,20 @@ public class LoginController implements Initializable {
         if (null!=selectedImageFile){
             imgUrl = CloudinaryUtil.uploadImage(selectedImageFile);
         }
-        if (userService.checkEmail(txtSignupEmail.getText())){
-            email = txtSignupEmail.getText();
+        if (!userService.checkEmail(txtSignupEmail.getText())){
+            new Alert(Alert.AlertType.ERROR, "Invalid Email Address!").show();
+            return;
         }
         UserDTO userDTO = new UserDTO(txtSignupFirstName.getText(),txtSignupLastName.getText(),email,password,imgUrl);
-        if (userService.createNewAccount(userDTO)){
-            new Alert(Alert.AlertType.INFORMATION, "Registration Successful!").show();
-            clearSignUpPage();
-            lnkToggleOnAction(null);
+        if(userService.checkPassword(password,txtSignupConfirmPassword.getText())){
+            if (userService.createNewAccount(userDTO)){
+                new Alert(Alert.AlertType.INFORMATION, "Registration Successful!").show();
+                clearSignUpPage();
+                lnkToggleOnAction(null);
+            }
+        }else{
+            new Alert(Alert.AlertType.ERROR, "Password and Confirm Password do not match!").show();
         }
-
     }
 
     private void clearSignUpPage() {
