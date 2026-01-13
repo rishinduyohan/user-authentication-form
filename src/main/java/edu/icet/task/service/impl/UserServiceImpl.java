@@ -22,7 +22,7 @@ public class UserServiceImpl implements UserService {
             newUser.setPassword(getEncryptedPassword(userDTO.getPassword()));
             newUser.setImageUrl(userDTO.getImageUrl());
             return userRepository.addNewUser(newUser);
-        }catch (Exception e){
+        } catch (Exception e) {
             new Alert(Alert.AlertType.ERROR, e.getMessage()).show();
         }
         return false;
@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
             if (!confirmPassword.isEmpty()) {
                 return password.equals(confirmPassword);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             new Alert(Alert.AlertType.ERROR, e.getMessage()).show();
         }
         return false;
@@ -44,13 +44,26 @@ public class UserServiceImpl implements UserService {
     public boolean checkEmail(String email) {
         try {
             return email.endsWith("@gmail.com");
-        }catch (Exception e){
+        } catch (Exception e) {
             new Alert(Alert.AlertType.ERROR, e.getMessage()).show();
         }
         return false;
     }
 
-    private String getEncryptedPassword(String password){
+    @Override
+    public UserDTO getUser(String email) {
+        User user = userRepository.getUser(email);
+        try {
+            if (user != null) {
+                return new UserDTO(user.getFirstName(), user.getLastName(), user.getEmail(), user.getPassword(), user.getImageUrl());
+            }
+        } catch (Exception e) {
+            new Alert(Alert.AlertType.ERROR, e.getMessage()).show();
+        }
+        return null;
+    }
+
+    private String getEncryptedPassword(String password) {
         return BCrypt.hashpw(password, BCrypt.gensalt());
     }
 }
