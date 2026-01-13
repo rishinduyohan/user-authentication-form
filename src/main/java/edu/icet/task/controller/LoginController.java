@@ -2,12 +2,16 @@ package edu.icet.task.controller;
 
 import edu.icet.task.config.CloudinaryUtil;
 import edu.icet.task.config.PasswordValidateUtil;
+import edu.icet.task.config.UserSession;
 import edu.icet.task.model.dto.UserDTO;
 import edu.icet.task.service.UserService;
 import edu.icet.task.service.impl.UserServiceImpl;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
@@ -15,6 +19,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.File;
 import java.net.URL;
@@ -22,6 +28,7 @@ import java.util.ResourceBundle;
 
 public class LoginController implements Initializable {
     UserService userService = new UserServiceImpl();
+    Stage stage = new Stage();
     private boolean isLoginView = true;
     private File selectedImageFile;
     private String strongStyle = "-fx-border-color: #22c55e; -fx-border-width: 2; -fx-border-radius: 8;";
@@ -88,12 +95,39 @@ public class LoginController implements Initializable {
 
     @FXML
     void btnLogInPasswordOnAction(ActionEvent event) {
-        //login password
+        btnLoginOnAction(event);
     }
 
     @FXML
     void btnLoginOnAction(ActionEvent event) {
-        //login button
+        String emailUser = txtLoginEmail.getText();
+        String inputPassword = txtLoginPassword.getText();
+
+        UserDTO user = userService.getUser(emailUser);
+        if (user != null) {
+            if (BCrypt.checkpw(inputPassword, user.getPassword())) {
+                UserSession.getInstance().setLoggedUser(user);
+                try {
+                    stage.setScene(new Scene(FXMLLoader.load(getClass().getResource("/view/dashboard.fxml"))));
+                    stage.setTitle("Dashboard Form");
+                    stage.show();
+                } catch (Exception e) {
+                    new Alert(Alert.AlertType.ERROR, e.getMessage()).show();
+                }
+                Stage currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+                currentStage.close();
+            } else {
+                new Alert(Alert.AlertType.ERROR, "Invalid Password!").show();
+                clearLoginPage();
+            }
+        } else {
+            new Alert(Alert.AlertType.ERROR, "User not found!").show();
+        }
+    }
+
+    private void clearLoginPage() {
+        txtLoginEmail.setText("");
+        txtLoginPassword.setText("");
     }
 
     @FXML
@@ -110,7 +144,7 @@ public class LoginController implements Initializable {
 
     @FXML
     void btnSignUpPasswordOnAction(ActionEvent event) {
-        //btn signup password
+        btnSignupOnAction(event);
     }
 
     @FXML
